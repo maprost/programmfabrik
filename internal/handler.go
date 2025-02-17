@@ -42,8 +42,6 @@ func runHandler(w http.ResponseWriter, r *http.Request, filter string) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Println("request done")
 }
 
 func flushJson(w http.ResponseWriter, c chan JsonTable, quit chan struct{}) {
@@ -61,7 +59,7 @@ func flushJson(w http.ResponseWriter, c chan JsonTable, quit chan struct{}) {
 	for {
 		select {
 		case <-quit:
-			fmt.Println("quit")
+			//fmt.Println("quit")
 			return
 
 		case t = <-c:

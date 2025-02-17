@@ -49,7 +49,6 @@ func callExiftool(c chan JsonTable, done chan struct{}, filter string) error {
 		if m == "<table" {
 			tableStr = m + " "
 			addTableStr = true
-			fmt.Printf(".")
 
 		} else if m == "</table>" {
 			tableStr += m
@@ -81,7 +80,6 @@ func callExiftool(c chan JsonTable, done chan struct{}, filter string) error {
 		return err
 	}
 
-	fmt.Printf(" done\n")
 	return nil
 }
 
