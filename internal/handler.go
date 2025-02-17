@@ -46,7 +46,6 @@ func runHandler(w http.ResponseWriter, r *http.Request, filter string) {
 
 func flushJson(w http.ResponseWriter, c chan JsonTable, quit chan struct{}) {
 	flusher, ok := w.(http.Flusher)
-	_ = flusher
 	if !ok {
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
