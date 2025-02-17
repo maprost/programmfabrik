@@ -32,10 +32,9 @@ func MainHandler(w http.ResponseWriter, r *http.Request) {
 func runHandler(w http.ResponseWriter, r *http.Request, filter string) {
 	c := make(chan JsonTable, 1)
 	quit := make(chan struct{})
-	done := make(chan struct{})
 	go flushJson(w, c, quit)
 
-	err := callExiftool(c, done, filter)
+	err := callExiftool(c, filter)
 
 	quit <- struct{}{}
 	if err != nil {

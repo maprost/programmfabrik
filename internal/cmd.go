@@ -28,7 +28,7 @@ type XmlDescription struct {
 	Value string `xml:",chardata"`
 }
 
-func callExiftool(c chan JsonTable, done chan struct{}, filter string) error {
+func callExiftool(c chan JsonTable, filter string) error {
 	cmd := exec.Command("exiftool", "-listx")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
