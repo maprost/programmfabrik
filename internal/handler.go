@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 )
 
 type JsonTag struct {
@@ -33,22 +32,23 @@ func MainHandler(w http.ResponseWriter, r *http.Request) {
 func runHandler(w http.ResponseWriter, r *http.Request, filter string) {
 	c := make(chan JsonTable, 1)
 	quit := make(chan struct{})
-	canceled := false
+	done := make(chan struct{})
 	go flushJson(w, c, quit)
-	go checkCancelStatus(r, quit, &canceled)
 
-	err := callExiftool(c, &canceled, filter)
+	err := callExiftool(c, done, filter)
+
 	quit <- struct{}{}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	fmt.Println("request done")
 }
 
 func flushJson(w http.ResponseWriter, c chan JsonTable, quit chan struct{}) {
 	flusher, ok := w.(http.Flusher)
+	_ = flusher
 	if !ok {
-		// error happened here
 		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
@@ -60,33 +60,36 @@ func flushJson(w http.ResponseWriter, c chan JsonTable, quit chan struct{}) {
 	for {
 		select {
 		case <-quit:
+			fmt.Println("quit")
 			return
 
 		case t = <-c:
 			err := json.NewEncoder(w).Encode(t)
 			if err != nil {
-				<-quit
-			}
-			flusher.Flush()
-		}
-	}
-}
-
-func checkCancelStatus(r *http.Request, quit chan struct{}, canceled *bool) {
-	timer := time.NewTimer(time.Second)
-
-	for {
-		select {
-		case <-quit:
-			return
-		case <-r.Cancel:
-			*canceled = true
-			return
-		case <-timer.C:
-			if r.Close {
-				*canceled = true
-				fmt.Println("closed")
+				fmt.Println("json error: ", err)
+				continue
+			} else {
+				flusher.Flush()
 			}
 		}
 	}
 }
+
+//func checkCancelStatus(r *http.Request, quit chan struct{}, canceled *bool) {
+//	timer := time.NewTimer(time.Second)
+//
+//	for {
+//		select {
+//		case <-quit:
+//			return
+//		case <-r.Cancel:
+//			*canceled = true
+//			return
+//		case <-timer.C:
+//			if r.Close {
+//				*canceled = true
+//				fmt.Println("closed")
+//			}
+//		}
+//	}
+//}

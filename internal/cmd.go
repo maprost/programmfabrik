@@ -28,7 +28,7 @@ type XmlDescription struct {
 	Value string `xml:",chardata"`
 }
 
-func callExiftool(c chan JsonTable, done *bool, filter string) error {
+func callExiftool(c chan JsonTable, done chan struct{}, filter string) error {
 	cmd := exec.Command("exiftool", "-listx")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -46,13 +46,11 @@ func callExiftool(c chan JsonTable, done *bool, filter string) error {
 	addTableStr := false
 	for scanner.Scan() {
 		m := scanner.Text()
-		if *done {
-			return cmd.Cancel()
-		}
 		if m == "<table" {
 			tableStr = m + " "
 			addTableStr = true
 			fmt.Printf(".")
+
 		} else if m == "</table>" {
 			tableStr += m
 			table, err := convertTable(tableStr)
@@ -64,6 +62,7 @@ func callExiftool(c chan JsonTable, done *bool, filter string) error {
 			} else {
 				for _, tag := range table.Tags {
 					if tag.Path == filter {
+						fmt.Printf("!")
 						c <- table
 						break
 					}
@@ -76,11 +75,13 @@ func callExiftool(c chan JsonTable, done *bool, filter string) error {
 			tableStr += m + " "
 		}
 	}
+
 	err = cmd.Wait()
 	if err != nil {
 		return err
 	}
 
+	fmt.Printf(" done\n")
 	return nil
 }
 
