@@ -42,6 +42,7 @@ func runHandler(w http.ResponseWriter, r *http.Request, filter string) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	fmt.Println("request done")
 }
 
@@ -69,6 +70,7 @@ func flushJson(w http.ResponseWriter, c chan JsonTable, quit chan struct{}) {
 				fmt.Println("json error: ", err)
 				continue
 			} else {
+				// TODO: flush should also work with a list
 				flusher.Flush()
 			}
 		}
