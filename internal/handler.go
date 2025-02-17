@@ -32,15 +32,18 @@ func MainHandler(w http.ResponseWriter, r *http.Request) {
 func runHandler(w http.ResponseWriter, r *http.Request, filter string) {
 	c := make(chan JsonTable, 1)
 	quit := make(chan struct{})
+	canceled := false
 	go flushJson(w, c, quit)
+	go checkCancelStatus(r, quit, &canceled)
 
-	err := callExiftool(c, filter)
+	err := callExiftool(c, &canceled, filter)
 
 	quit <- struct{}{}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	fmt.Println("request done")
 }
 
 func flushJson(w http.ResponseWriter, c chan JsonTable, quit chan struct{}) {
@@ -73,21 +76,16 @@ func flushJson(w http.ResponseWriter, c chan JsonTable, quit chan struct{}) {
 	}
 }
 
-//func checkCancelStatus(r *http.Request, quit chan struct{}, canceled *bool) {
-//	timer := time.NewTimer(time.Second)
-//
-//	for {
-//		select {
-//		case <-quit:
-//			return
-//		case <-r.Cancel:
-//			*canceled = true
-//			return
-//		case <-timer.C:
-//			if r.Close {
-//				*canceled = true
-//				fmt.Println("closed")
-//			}
-//		}
-//	}
-//}
+func checkCancelStatus(r *http.Request, quit chan struct{}, canceled *bool) {
+	ctx := r.Context()
+
+	for {
+		select {
+		case <-quit:
+			return
+		case <-ctx.Done():
+			*canceled = true
+			return
+		}
+	}
+}
