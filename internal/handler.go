@@ -45,10 +45,14 @@ func runHandler(w http.ResponseWriter, r *http.Request, filter string) {
 	quitCheck <- struct{}{}
 
 	<-realQuit
+	close(quitFlush)
+	close(quitCheck)
+	close(realQuit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	fmt.Println("done")
 }
 
 func flushJson(w http.ResponseWriter, c chan JsonTable, quit chan struct{}, realQuit chan struct{}) {
@@ -105,12 +109,14 @@ func flushJson(w http.ResponseWriter, c chan JsonTable, quit chan struct{}, real
 func checkCancelStatus(r *http.Request, quit chan struct{}, canceled *bool) {
 	ctx := r.Context()
 
-	for !*canceled {
+	for {
 		select {
 		case <-quit:
 			return
 		case <-ctx.Done():
 			*canceled = true
+			<-quit
+			return
 		}
 	}
 }
