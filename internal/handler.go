@@ -45,9 +45,6 @@ func runHandler(w http.ResponseWriter, r *http.Request, filter string) {
 	quitCheck <- struct{}{}
 
 	<-realQuit
-	close(quitFlush)
-	close(quitCheck)
-	close(realQuit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
